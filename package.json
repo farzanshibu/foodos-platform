@@ -1,0 +1,43 @@
+{
+  "name": "foodos-platform",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo run dev --parallel --concurrency=20",
+    "dev:web": "turbo run dev --filter=@foodos/web",
+    "dev:services": "turbo run dev --filter=./services/*",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "biome lint .",
+    "typecheck": "turbo run typecheck",
+    "verify": "pnpm typecheck && pnpm check && pnpm foodos && pnpm test",
+    "test": "tsx tests/public-routes.test.ts && tsx --conditions=react-server tests/shared-cart.test.ts && tsx tests/registry-derive.test.ts && tsx tests/contract-wire.test.ts && tsx --conditions=react-server tests/denial-channel.test.ts && tsx --conditions=react-server tests/combo-pricing.test.ts && tsx --conditions=react-server tests/menu-csv.test.ts && tsx --conditions=react-server tests/qr-encoder.test.ts && RATE_LIMIT_DEV=on UPSTASH_REDIS_REST_URL= UPSTASH_REDIS_REST_TOKEN= tsx --conditions=react-server tests/scan-throttle.test.ts && tsx tests/platform-page.test.ts && tsx --conditions=react-server tests/bulk-units.test.ts",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs -f nats",
+    "nats:bootstrap": "tsx --conditions=react-server scripts/bootstrap-streams.ts",
+    "nats:watch": "nats sub 'evt.>' --server localhost:4222",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "turbo run db:migrate --concurrency=1",
+    "auth:generate": "pnpm --filter @foodos/auth auth:generate",
+    "sot": "bash scripts/sot.sh",
+    "sot:map": "bash scripts/sot.sh --map",
+    "subjects": "tsx scripts/subjects.ts",
+    "autumn:plan": "tsx scripts/autumn-plan.ts",
+    "ui:add": "pnpm --filter @foodos/ui dlx shadcn@latest add",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "check:fix": "biome check --write --unsafe .",
+    "foodos": "tsx tools/foodos-check.ts",
+    "foodos:fix": "tsx tools/foodos-check.ts --fix"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@trpc/server": "^11.0.0",
+    "superjson": "^2.2.2",
+    "tsx": "^4.19.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.9.0"
+  }
+}

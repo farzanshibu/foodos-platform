@@ -1,0 +1,61 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    ".env",
+    "biome.json",
+    "packages/registry/src/**",
+    "packages/contracts/src/**"
+  ],
+  // Turbo 2 runs tasks in strict env mode: a variable not named here is not in the child
+  // process at all. Undeclared, `drizzle-kit migrate` sees DATABASE_URL="" and reports
+  // "Please provide required params for Postgres driver", and a service throws on the
+  // first `env.envelopeSecret()`. The list is exactly the keys @foodos/env reads -
+  // adding a variable means one line there, one in .env.example, and one here.
+  "globalEnv": [
+    "AUTUMN_SECRET_KEY",
+    "BETTER_AUTH_SECRET",
+    "DATABASE_URL",
+    "DEV_PLAN",
+    "ENVELOPE_SECRET",
+    "NATS_NKEY_SEED",
+    "NATS_URL",
+    "NATS_USER",
+    "NEXT_PUBLIC_APP_URL",
+    "NODE_ENV",
+    // Not read through @foodos/env: `next dev` reads it itself, and the default 3000 is
+    // not always free. It has to be listed or strict mode hides it from the gateway.
+    "PORT",
+    "PLATFORM_ORG_ID",
+    "RATE_LIMIT_ALLOW_IN_MEMORY",
+    "RATE_LIMIT_DEV",
+    "RAZORPAY_KEY_ID",
+    "RAZORPAY_KEY_SECRET",
+    "RAZORPAY_WEBHOOK_SECRET",
+    "SERVICE_NAME",
+    "UPSTASH_REDIS_REST_TOKEN",
+    "UPSTASH_REDIS_REST_URL"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "cache": false,
+      "persistent": true
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    }
+  }
+}

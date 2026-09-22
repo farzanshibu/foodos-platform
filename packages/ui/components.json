@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "../../apps/web/src/app/globals.css",
+    "baseColor": "slate",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "@foodos/ui/src/components",
+    "utils": "@foodos/ui/src/lib/utils",
+    "ui": "@foodos/ui/src/components/ui"
+  },
+  "iconLibrary": "lucide"
+}

@@ -1,0 +1,12 @@
+node_modules
+.next
+dist
+.turbo
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+
+# The apple-design HIG reference bundle is a vendored skill, not source.
+.claude/skills/apple-design/
+.DS_Store

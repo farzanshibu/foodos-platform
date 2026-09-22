@@ -1,0 +1,40 @@
+{
+  "name": "@foodos/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/components/ui/*.tsx",
+    "./lib/utils": "./src/lib/utils.ts",
+    "./gate": "./src/components/gate.tsx",
+    "./access-gate": "./src/components/access-gate.tsx",
+    "./auth-gate": "./src/components/auth-gate.tsx",
+    "./feature-gate": "./src/components/feature-gate.tsx",
+    "./price-gate": "./src/components/price-gate.tsx",
+    "./upgrade-prompt": "./src/components/upgrade-prompt.tsx",
+    "./viewer": "./src/components/viewer.tsx",
+    "./denial": "./src/components/denial.tsx",
+    "./usage-meter": "./src/components/usage-meter.tsx",
+    "./plan-badge": "./src/components/plan-badge.tsx",
+    "./upgrade-modal": "./src/components/upgrade-modal.tsx",
+    "./over-plan-banner": "./src/components/over-plan-banner.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@foodos/registry": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.469.0",
+    "tailwind-merge": "^2.6.0",
+    "@foodos/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "typescript": "^5.7.0"
+  }
+}

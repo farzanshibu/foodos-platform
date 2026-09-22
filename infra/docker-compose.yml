@@ -1,0 +1,74 @@
+# SOT: infra, docker-compose, nats-server, local-stack
+# Everything the platform needs locally: NATS with JetStream, and Postgres.
+#
+# NATS is started from a configuration file rather than from flags, because the thing it
+# most needs to be told is who is allowed to publish what. `--jetstream` with no accounts
+# meant every process on the machine - and everything else that could reach the port - had
+# unrestricted access to every subject on the bus. See nats/nats.conf and nats/RUNBOOK.md.
+services:
+  nats:
+    image: nats:2.10-alpine
+    command: ["-c", "/etc/nats/nats.conf"]
+    ports:
+      # Bound to loopback: nothing outside this machine should be able to open a NATS
+      # connection to a development stack, authenticated or not.
+      - "127.0.0.1:4222:4222"   # client
+      - "127.0.0.1:8222:8222"   # monitoring: http://localhost:8222/varz
+    volumes:
+      - ./nats:/etc/nats:ro
+      - nats-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: foodos
+      POSTGRES_PASSWORD: foodos
+      POSTGRES_DB: foodos
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foodos"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Backs the replay/idempotency dedup store (apps/web/src/gateway/replay.ts) and, once
+  # configured, the rate limiter. The app speaks the Upstash REST protocol only - see
+  # RateLimitStore/ReplayStore's UpstashStore classes - so `redis-http` fronts plain Redis
+  # with that REST API locally, the same shape Upstash provides in production. No new
+  # client dependency: it is one `fetch()` call in both stores.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis-http:
+    image: hiett/serverless-redis-http:latest
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: dev-token
+      SRH_CONNECTION_STRING: "redis://redis:6379"
+    ports:
+      - "127.0.0.1:8079:80"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  nats-data:
+  pg-data:
+  redis-data:

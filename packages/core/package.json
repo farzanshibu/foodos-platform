@@ -1,0 +1,25 @@
+{
+  "name": "@foodos/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./gateway": "./src/gateway.ts",
+    "./service": "./src/service.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@foodos/contracts": "workspace:*",
+    "@foodos/registry": "workspace:*",
+    "@foodos/transport": "workspace:*",
+    "zod": "^4.0.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

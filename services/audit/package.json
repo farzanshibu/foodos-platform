@@ -1,0 +1,29 @@
+{
+  "name": "@foodos/service-audit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../infra/nats/creds/audit.env --conditions=react-server src/index.ts",
+    "start": "tsx --conditions=react-server src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@foodos/contracts": "workspace:*",
+    "@foodos/db": "workspace:*",
+    "@foodos/core": "workspace:*",
+    "@foodos/registry": "workspace:*",
+    "@foodos/transport": "workspace:*",
+    "drizzle-orm": "^0.44.0",
+    "@foodos/env": "workspace:*",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "drizzle-kit": "^0.31.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

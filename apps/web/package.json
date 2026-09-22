@@ -1,0 +1,43 @@
+{
+  "name": "@foodos/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@foodos/auth": "workspace:*",
+    "@foodos/billing": "workspace:*",
+    "@foodos/contracts": "workspace:*",
+    "@foodos/env": "workspace:*",
+    "@foodos/core": "workspace:*",
+    "@foodos/registry": "workspace:*",
+    "@foodos/transport": "workspace:*",
+    "@foodos/ui": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
+    "@trpc/client": "^11.0.0",
+    "@trpc/server": "^11.0.0",
+    "@trpc/tanstack-react-query": "^11.0.0",
+    "better-auth": "^1.3.0",
+    "lucide-react": "^0.469.0",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "server-only": "^0.0.1",
+    "superjson": "^2.2.2",
+    "zod": "^4.0.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,56 @@
+# Architectural FoodOS Community License
+
+Version 1.0, August 2026
+
+Copyright (c) 2026 the FoodOS platform authors.
+
+This license governs this release and every version after it of the
+Architectural FoodOS Starter Kit (the "Software"). Earlier copies were
+distributed under the MIT license; that license does not apply to this or any
+later version.
+
+## 1. Grant
+
+Subject to the terms below, you may:
+
+- Use the Software to build unlimited products, including commercial SaaS you
+  charge for, and client or agency work.
+- Modify the Software freely for your own purposes. No attribution is
+  required, and no equity, revenue share or cut is owed.
+
+## 2. Restrictions
+
+You may not:
+
+- Sell, sublicense, publish, redistribute, or repackage the Software or a
+  substantial part of it, whether standalone or as part of a starter kit,
+  template, or boilerplate offering.
+- Transfer your access. Access to the Software is tied to your membership or
+  purchase, is non-transferable, and must be kept private. Anyone you allow
+  access must be bound by real access controls and a confidentiality
+  agreement at least as protective as this license.
+
+Building and shipping a product with the Software is not redistribution.
+Handing the Software itself, or a substantial part of it, to someone else is.
+
+## 3. No warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. That covers defects in
+code written by the authors, in updates they publish, and in third-party
+dependencies.
+
+## 4. No liability
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE. You decide what to install and what to
+ship.
+
+## 5. Term
+
+Your rights under this license last as long as your membership or purchase
+remains active and you comply with these terms. On breach, your rights end
+immediately; sections 3 and 4 survive.

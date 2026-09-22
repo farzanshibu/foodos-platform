@@ -1,0 +1,413 @@
+@import "tailwindcss";
+
+/**
+ * Tailwind v4 scans the importing project and stops. @foodos/ui lives outside it, so
+ * every utility written in Button, Card, Table and the rest generated no CSS at all - the
+ * components had classes and the stylesheet had no rules for them, which is why padding,
+ * height and shadows silently did nothing on shared primitives. Naming the package here is
+ * what makes the design system's own classes real.
+ */
+@source "../../../../packages/ui/src";
+
+/**
+ * SOT: design-tokens, theme, shadcn-tokens, dim-mode, dark-mode, elevation, type-scale
+ * WHAT   The token contract for the whole platform. Never hardcode a colour, a radius or a
+ *        shadow in a component; change a token here and every surface follows.
+ *
+ * WHY these colours. The people using this hardest are a manager on a laptop in a bright
+ * back office, staff glancing at a phone under kitchen strip lighting, and a guest reading a
+ * menu at a dim table. So: warm-tinted neutrals rather than the cold blue-greys every admin
+ * template ships with, and one deep evergreen accent that reads as "confirmed" on a pass and
+ * never competes with food photography. Restrained by policy - the accent carries primary
+ * actions, current selection and focus, nothing decorative.
+ *
+ * WHY three themes. Full dark is too much contrast to glance at across a room; full light is
+ * a torch in somebody's face at a table. Dim sits between them and is what people leave on.
+ *
+ * HOW  `:root` is light. `[data-theme]` on <html> wins when somebody has chosen; with no
+ *      choice, `prefers-color-scheme` decides. Every theme redefines the same token set, so
+ *      no component ever needs to know which one is on.
+ * WHERE apps/web/src/features/table/theme.tsx, packages/ui/src/components/ui/*
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* One radius family. Controls sit at md, containers at lg, pills at full. */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Elevation is a token, not an ad-hoc shadow utility. Warm and shallow: this is paper on a
+     desk, not a card floating in space. */
+  --shadow-xs: var(--elevation-xs);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+
+  /* 1.2 ratio. Product UI has many type elements; a wider ratio turns into noise. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-numeric);
+
+  /**
+   * Motion tokens. The browser's built-in `ease-out` is too weak to read as deliberate, so
+   * UI uses these three and nothing else. `ease-in` is deliberately absent: it starts slow,
+   * which delays the exact moment the user is watching.
+   *
+   * --ease-out    entering and exiting
+   * --ease-in-out moving or morphing something already on screen
+   * --ease-drawer the iOS sheet curve, for the bottom sheet only
+   */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /**
+   * Durations. Everything the user triggers stays under 300ms: a 180ms dropdown feels more
+   * responsive than a 400ms one, and this product's screens are worked, not admired.
+   */
+  --duration-press: 120ms;
+  --duration-hover: 150ms;
+  --duration-popover: 200ms;
+  --duration-sheet: 280ms;
+
+  /**
+   * The three entrances the app has. Transform and opacity only, all ease-out, and each
+   * starts from something rather than nothing - `scale(0)`, or sliding in from off-screen
+   * with no anchor, is how motion reads as a cartoon instead of an interface.
+   *
+   * Keyframes rather than transitions because each plays once on an element that did not
+   * exist a frame ago. Anything a user can fire twice in a second - a hover, a toggle, a
+   * toast - stays a transition, which retargets from wherever it currently is instead of
+   * restarting from zero.
+   *
+   * Declared as `--animate-*` here rather than as a bare `@keyframes` in a layer: Tailwind
+   * v4 only emits keyframes it can see a utility for, and a hand-written block outside the
+   * theme is dropped, which silently resolves the animation to `none`.
+   */
+  --animate-enter: enter-fade var(--duration-popover) var(--ease-out) both;
+  --animate-sheet: enter-sheet var(--duration-sheet) var(--ease-drawer) both;
+  --animate-backdrop: enter-backdrop var(--duration-popover) var(--ease-out) both;
+
+  @keyframes enter-fade {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  @keyframes enter-sheet {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes enter-backdrop {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Tailwind's own default curve and duration, so a bare `transition-colors` is already
+     the platform's hover timing rather than the framework's. */
+  --default-transition-duration: var(--duration-hover);
+}
+
+:root {
+  --font-ui:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-numeric: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Light: paper. Background sits a shade below the card so panels lift without a shadow. */
+  --background: oklch(98.4% 0.004 85);
+  --foreground: oklch(24% 0.012 75);
+  --surface: oklch(96.6% 0.005 85);
+  --surface-foreground: oklch(24% 0.012 75);
+  --card: oklch(100% 0 0);
+  --card-foreground: oklch(24% 0.012 75);
+  --primary: oklch(48% 0.088 168);
+  --primary-foreground: oklch(99% 0.003 168);
+  --secondary: oklch(95% 0.006 85);
+  --secondary-foreground: oklch(30% 0.012 75);
+  --muted: oklch(95.5% 0.005 85);
+  --muted-foreground: oklch(50% 0.014 75);
+  --accent: oklch(94% 0.012 168);
+  --accent-foreground: oklch(34% 0.05 168);
+  --destructive: oklch(52% 0.16 27);
+  --destructive-foreground: oklch(99% 0.004 27);
+  --success: oklch(52% 0.1 155);
+  --success-foreground: oklch(99% 0.003 155);
+  --warning: oklch(62% 0.12 75);
+  --warning-foreground: oklch(22% 0.03 75);
+  --info: oklch(52% 0.09 245);
+  --info-foreground: oklch(99% 0.003 245);
+  --border: oklch(90.5% 0.006 85);
+  --border-strong: oklch(84% 0.008 85);
+  --input: oklch(88% 0.007 85);
+  --ring: oklch(48% 0.088 168);
+
+  --elevation-xs: 0 1px 2px oklch(24% 0.012 75 / 0.06);
+  --elevation-sm: 0 1px 2px oklch(24% 0.012 75 / 0.06), 0 1px 3px oklch(24% 0.012 75 / 0.04);
+  --elevation-md: 0 2px 4px oklch(24% 0.012 75 / 0.05), 0 6px 16px oklch(24% 0.012 75 / 0.07);
+  --elevation-lg: 0 4px 8px oklch(24% 0.012 75 / 0.06), 0 16px 40px oklch(24% 0.012 75 / 0.12);
+}
+
+/**
+ * The dark values, written once and applied by both the media query and the explicit
+ * attribute. Two hand-maintained copies of the same palette is how a token drifts.
+ */
+@layer base {
+  :root:not([data-theme="light"]):not([data-theme="dim"]) {
+    @media (prefers-color-scheme: dark) {
+      --background: oklch(18% 0.008 80);
+      --foreground: oklch(95% 0.005 85);
+      --surface: oklch(21% 0.009 80);
+      --surface-foreground: oklch(95% 0.005 85);
+      --card: oklch(22.5% 0.01 80);
+      --card-foreground: oklch(95% 0.005 85);
+      --primary: oklch(72% 0.11 168);
+      --primary-foreground: oklch(18% 0.02 168);
+      --secondary: oklch(27% 0.01 80);
+      --secondary-foreground: oklch(95% 0.005 85);
+      --muted: oklch(27% 0.01 80);
+      --muted-foreground: oklch(72% 0.011 85);
+      --accent: oklch(30% 0.024 168);
+      --accent-foreground: oklch(88% 0.05 168);
+      --destructive: oklch(64% 0.16 27);
+      --destructive-foreground: oklch(17% 0.02 27);
+      --success: oklch(70% 0.11 155);
+      --success-foreground: oklch(18% 0.02 155);
+      --warning: oklch(78% 0.11 75);
+      --warning-foreground: oklch(20% 0.03 75);
+      --info: oklch(70% 0.1 245);
+      --info-foreground: oklch(18% 0.02 245);
+      --border: oklch(30% 0.011 80);
+      --border-strong: oklch(38% 0.013 80);
+      --input: oklch(34% 0.012 80);
+      --ring: oklch(72% 0.11 168);
+
+      --elevation-xs: 0 1px 2px oklch(0% 0 0 / 0.4);
+      --elevation-sm: 0 1px 3px oklch(0% 0 0 / 0.45);
+      --elevation-md: 0 6px 16px oklch(0% 0 0 / 0.5);
+      --elevation-lg: 0 16px 40px oklch(0% 0 0 / 0.55);
+    }
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: oklch(18% 0.008 80);
+  --foreground: oklch(95% 0.005 85);
+  --surface: oklch(21% 0.009 80);
+  --surface-foreground: oklch(95% 0.005 85);
+  --card: oklch(22.5% 0.01 80);
+  --card-foreground: oklch(95% 0.005 85);
+  --primary: oklch(72% 0.11 168);
+  --primary-foreground: oklch(18% 0.02 168);
+  --secondary: oklch(27% 0.01 80);
+  --secondary-foreground: oklch(95% 0.005 85);
+  --muted: oklch(27% 0.01 80);
+  --muted-foreground: oklch(72% 0.011 85);
+  --accent: oklch(30% 0.024 168);
+  --accent-foreground: oklch(88% 0.05 168);
+  --destructive: oklch(64% 0.16 27);
+  --destructive-foreground: oklch(17% 0.02 27);
+  --success: oklch(70% 0.11 155);
+  --success-foreground: oklch(18% 0.02 155);
+  --warning: oklch(78% 0.11 75);
+  --warning-foreground: oklch(20% 0.03 75);
+  --info: oklch(70% 0.1 245);
+  --info-foreground: oklch(18% 0.02 245);
+  --border: oklch(30% 0.011 80);
+  --border-strong: oklch(38% 0.013 80);
+  --input: oklch(34% 0.012 80);
+  --ring: oklch(72% 0.11 168);
+
+  --elevation-xs: 0 1px 2px oklch(0% 0 0 / 0.4);
+  --elevation-sm: 0 1px 3px oklch(0% 0 0 / 0.45);
+  --elevation-md: 0 6px 16px oklch(0% 0 0 / 0.5);
+  --elevation-lg: 0 16px 40px oklch(0% 0 0 / 0.55);
+}
+
+/**
+ * Dim. A lifted background, a gentler foreground, and a border that is visible without being
+ * a line of light. This is what a phone at a dinner table and a tablet on a pass both want
+ * after dark. Contrast still clears 4.5:1 for body text and 3:1 for the borders that carry
+ * meaning; softer is not an excuse for unreadable.
+ */
+:root[data-theme="dim"] {
+  --background: oklch(27% 0.01 82);
+  --foreground: oklch(92% 0.006 85);
+  --surface: oklch(30% 0.011 82);
+  --surface-foreground: oklch(92% 0.006 85);
+  --card: oklch(31.5% 0.012 82);
+  --card-foreground: oklch(92% 0.006 85);
+  --primary: oklch(76% 0.1 168);
+  --primary-foreground: oklch(24% 0.02 168);
+  --secondary: oklch(35% 0.012 82);
+  --secondary-foreground: oklch(92% 0.006 85);
+  --muted: oklch(35% 0.012 82);
+  --muted-foreground: oklch(76% 0.011 85);
+  --accent: oklch(37% 0.026 168);
+  --accent-foreground: oklch(90% 0.045 168);
+  --destructive: oklch(68% 0.15 27);
+  --destructive-foreground: oklch(24% 0.02 27);
+  --success: oklch(74% 0.1 155);
+  --success-foreground: oklch(24% 0.02 155);
+  --warning: oklch(80% 0.1 75);
+  --warning-foreground: oklch(25% 0.03 75);
+  --info: oklch(74% 0.09 245);
+  --info-foreground: oklch(24% 0.02 245);
+  --border: oklch(39% 0.013 82);
+  --border-strong: oklch(46% 0.015 82);
+  --input: oklch(42% 0.014 82);
+  --ring: oklch(76% 0.1 168);
+
+  --elevation-xs: 0 1px 2px oklch(0% 0 0 / 0.3);
+  --elevation-sm: 0 1px 3px oklch(0% 0 0 / 0.35);
+  --elevation-md: 0 6px 16px oklch(0% 0 0 / 0.4);
+  --elevation-lg: 0 16px 40px oklch(0% 0 0 / 0.45);
+}
+
+:root[data-theme="light"] {
+  --background: oklch(98.4% 0.004 85);
+  --foreground: oklch(24% 0.012 75);
+  --surface: oklch(96.6% 0.005 85);
+  --surface-foreground: oklch(24% 0.012 75);
+  --card: oklch(100% 0 0);
+  --card-foreground: oklch(24% 0.012 75);
+  --primary: oklch(48% 0.088 168);
+  --primary-foreground: oklch(99% 0.003 168);
+  --secondary: oklch(95% 0.006 85);
+  --secondary-foreground: oklch(30% 0.012 75);
+  --muted: oklch(95.5% 0.005 85);
+  --muted-foreground: oklch(50% 0.014 75);
+  --accent: oklch(94% 0.012 168);
+  --accent-foreground: oklch(34% 0.05 168);
+  --destructive: oklch(52% 0.16 27);
+  --destructive-foreground: oklch(99% 0.004 27);
+  --success: oklch(52% 0.1 155);
+  --success-foreground: oklch(99% 0.003 155);
+  --warning: oklch(62% 0.12 75);
+  --warning-foreground: oklch(22% 0.03 75);
+  --info: oklch(52% 0.09 245);
+  --info-foreground: oklch(99% 0.003 245);
+  --border: oklch(90.5% 0.006 85);
+  --border-strong: oklch(84% 0.008 85);
+  --input: oklch(88% 0.007 85);
+  --ring: oklch(48% 0.088 168);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-ui);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One focus treatment everywhere. A keyboard user should never have to hunt for the ring. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Numbers in tables, money and counters line up by default. */
+  th,
+  td {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+}
+
+/**
+ * Honour the system setting rather than deciding for someone that motion is fine. Scoped to
+ * the layer rather than shouted with !important, so a component that genuinely must move -
+ * a progress bar carrying meaning - can still opt back in.
+ */
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms;
+      animation-iteration-count: 1;
+      transition-duration: 0.01ms;
+      scroll-behavior: auto;
+    }
+
+    /* The movement-free variants are declared after the utilities layer, below. */
+  }
+}
+
+/**
+ * Fewer and gentler, not none.
+ *
+ * Reduced motion asks for no movement; it does not ask to have a panel appear with no
+ * warning at all, so each entrance collapses to the fade and drops the travel. This sits
+ * after `@layer utilities` rather than inside `@layer base` because a later unlayered rule
+ * beats any layered one - which is how the override wins without !important, and without
+ * taking the override away from anything downstream with a real reason to move.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-enter,
+  .animate-sheet,
+  .animate-backdrop {
+    animation: enter-backdrop 150ms var(--ease-out) both;
+  }
+}
