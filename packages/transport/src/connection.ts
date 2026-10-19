@@ -53,9 +53,28 @@ export const natsUrl = env.natsUrl;
  * that identity may use. `inboxPrefix` scopes replies to this process, so a compromised
  * service cannot subscribe to the gateway's inbox and read every answer crossing the bus.
  */
+/**
+ * How long the request-serving process keeps an unused connection. Each serverless instance
+ * opens its own, and a free-tier bus caps them account-wide, so an idle one is given back
+ * rather than held until the platform recycles the instance.
+ */
+const IDLE_CLOSE_MS = 15_000;
+let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
+function closeWhenIdle(): void {
+  if (idleTimer !== undefined) clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    const pending = globalThis.__foodosNats;
+    globalThis.__foodosNats = undefined;
+    void pending?.then((nc) => nc.drain()).catch(() => undefined);
+  }, IDLE_CLOSE_MS);
+  idleTimer.unref();
+}
+
 export function connection(): Promise<NatsConnection> {
   const scope = connectionScope.getStore();
   if (scope === undefined) {
+    closeWhenIdle();
     // A failed connect must not be cached, or every later request replays the same failure.
     globalThis.__foodosNats ??= open(env.natsUser()).catch((error: unknown) => {
       globalThis.__foodosNats = undefined;

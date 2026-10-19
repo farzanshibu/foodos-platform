@@ -9,7 +9,13 @@
  */
 import { createServer } from "node:http";
 
+import { timingSafeEqual } from "node:crypto";
+
 import { connectionScope } from "../packages/transport/src/connection";
+import {
+  publishCommandDirect,
+  rpcRawDirect,
+} from "../packages/transport/src/request";
 
 const SERVICES = [
   "audit",
@@ -54,11 +60,62 @@ for (const name of SERVICES) {
 }
 
 const port = Number(process.env["PORT"] ?? 10000);
+const bridgeToken = process.env["BUS_BRIDGE_TOKEN"] ?? "";
+const MAX_BODY = 600 * 1024;
+
+function authorised(header: string | undefined): boolean {
+  if (bridgeToken.length === 0 || header === undefined) return false;
+  const given = Buffer.from(header.replace(/^Bearer /, ""));
+  const wanted = Buffer.from(bridgeToken);
+  return given.length === wanted.length && timingSafeEqual(given, wanted);
+}
+
+async function readJson(req: import("node:http").IncomingMessage): Promise<Record<string, unknown>> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length;
+    if (size > MAX_BODY) throw new Error("body too large");
+    chunks.push(chunk as Buffer);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
+}
+
 createServer((req, res) => {
-  if (req.url === "/health" || req.url === "/") {
+  if (req.method === "GET" && (req.url === "/health" || req.url === "/")) {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ ok: true, services: booted }));
     return;
   }
+  if (req.method === "POST" && (req.url === "/bridge/rpc" || req.url === "/bridge/command")) {
+    if (!authorised(req.headers.authorization)) {
+      res.writeHead(401).end();
+      return;
+    }
+    void (async () => {
+      try {
+        const body = await readJson(req);
+        const subject = String(body["subject"] ?? "");
+        const envelope = body["envelope"] as never;
+        // Whatever the bus call touches rides one of the group connections.
+        await connectionScope.run("g1", async () => {
+          if (req.url === "/bridge/rpc") {
+            const timeoutMs = Math.min(Number(body["timeoutMs"] ?? 5_000), 30_000);
+            const reply = await rpcRawDirect(subject, envelope, timeoutMs);
+            res.writeHead(200, { "content-type": "application/json" });
+            res.end(JSON.stringify(reply));
+          } else {
+            await publishCommandDirect({ subject, envelope });
+            res.writeHead(200, { "content-type": "application/json" });
+            res.end("{}");
+          }
+        });
+      } catch (error) {
+        console.error("[bridge]", error instanceof Error ? error.message : String(error));
+        res.writeHead(502).end();
+      }
+    })();
+    return;
+  }
   res.writeHead(404).end();
-}).listen(port, () => console.info(`[all] health on :${String(port)}`));
+}).listen(port, () => console.info(`[all] health + bridge on :${String(port)}`));
