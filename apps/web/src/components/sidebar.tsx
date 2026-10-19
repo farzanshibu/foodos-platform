@@ -53,12 +53,12 @@ export function Sidebar({
       aria-label="Main"
       className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col self-start border-border border-r bg-surface md:flex"
     >
-      <div className="flex h-14 items-center gap-2 border-border border-b px-5">
+      <div className="flex h-12 items-center gap-2 border-border border-b px-4">
         <span className="size-5 rounded-[6px] bg-primary" aria-hidden="true" />
         <span className="font-semibold text-[15px] tracking-[-0.01em]">FoodOS</span>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         {sectionsOf(items).map((section, index) =>
           section.group === null ? (
             <ul key="_" className="space-y-0.5 pt-2">
@@ -79,7 +79,7 @@ export function Sidebar({
         )}
       </div>
 
-      <div className="space-y-3 border-border border-t p-3">
+      <div className="space-y-2 border-border border-t p-2.5">
         {nudge === null ? null : (
           <Link
             className="group block rounded-md border border-border bg-card p-3 text-sm shadow-xs transition-colors duration-150 hover:border-border-strong hover:bg-accent"

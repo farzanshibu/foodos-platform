@@ -29,7 +29,7 @@ export function NavLink({ item }: { item: NavEntryAccess }) {
       )}
       aria-current={current ? "page" : undefined}
       className={cn(
-        "relative flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm",
+        "relative flex items-center justify-between gap-2 rounded-md px-2 py-1 text-[13px] leading-5",
         "transition-colors duration-[var(--duration-hover)] ease-[var(--ease-out)]",
         current
           ? "bg-primary/10 font-medium text-primary"
@@ -39,7 +39,7 @@ export function NavLink({ item }: { item: NavEntryAccess }) {
     >
       {/* Not colour alone: the current item also carries a rail and aria-current. */}
       {current ? (
-        <span className="-left-3 absolute h-4 w-0.5 rounded-full bg-primary" aria-hidden="true" />
+        <span className="-left-2 absolute h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
       ) : null}
       <span className="truncate">{item.label}</span>
       {item.locked ? (

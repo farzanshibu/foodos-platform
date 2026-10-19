@@ -70,7 +70,7 @@ export function NavSection({
         onClick={toggle}
         aria-expanded={open}
         aria-controls={listId}
-        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 font-medium text-2xs text-muted-foreground uppercase tracking-[0.08em] transition-colors duration-150 hover:text-foreground"
+        className="flex w-full items-center justify-between rounded-md px-2 py-1 font-medium text-[10.5px] text-muted-foreground uppercase tracking-[0.08em] transition-colors duration-150 hover:text-foreground"
       >
         <span>{group}</span>
         <ChevronRight
@@ -78,7 +78,7 @@ export function NavSection({
           aria-hidden="true"
         />
       </button>
-      <ul id={listId} hidden={!open} className="space-y-0.5 pb-2">
+      <ul id={listId} hidden={!open} className="space-y-px pb-1.5">
         {items.map((item) => (
           <li key={item.href}>
             <NavLink item={item} />
