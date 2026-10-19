@@ -10,7 +10,7 @@
  */
 import { Card, CardContent } from "@foodos/ui/card";
 import type { LucideIcon } from "lucide-react";
-import { Printer, ScanLine } from "lucide-react";
+import { Printer, ScanLine, UserCog } from "lucide-react";
 
 function FailureNotice({
   icon: Icon,
@@ -69,6 +69,24 @@ export function CardUnavailable() {
       icon={Printer}
       title="This card isn't available"
       detail="It may have been renamed, replaced or removed. Open the card designer to find the one you want."
+    />
+  );
+}
+
+/**
+ * A signed-in member of staff opened the guest surface. Identity is staff-first by design, so
+ * a waiter who scans a table is not demoted to a guest mid-shift - which also means the same
+ * browser cannot BE a guest, and the session the page asks for does not exist. Saying so is
+ * safe where "this code isn't active" is not: only somebody holding a staff session cookie
+ * ever sees it, so it tells a prober nothing, and it stops an owner testing their own QR code
+ * from concluding that the code is broken.
+ */
+export function StaffOnGuestSurface() {
+  return (
+    <FailureNotice
+      icon={UserCog}
+      title="You're signed in as staff"
+      detail="The customer view opens for guests, not staff accounts. Open this link in a private window or on a phone, or sign out first."
     />
   );
 }

@@ -12,7 +12,10 @@
  * WHERE  apps/web/src/app/q/[token], apps/web/src/gateway/guest-session.ts
  */
 
-import { ScanFailed } from "@/features/qr/scan-failed";
+import { SESSION_COOKIE_NAMES } from "@foodos/auth/session";
+import { cookies } from "next/headers";
+
+import { ScanFailed, StaffOnGuestSurface } from "@/features/qr/scan-failed";
 import { GuestNav } from "@/features/table/guest-nav";
 import { TableCartProvider } from "@/features/table/table-cart-provider";
 import { ThemeToggle } from "@/features/table/theme";
@@ -25,7 +28,13 @@ export default async function TableLayout({ children }: { children: React.ReactN
   try {
     session = await api.qrSession.current({});
   } catch {
-    return <ScanFailed />;
+    // Presence of a staff cookie only: this is for the person holding it, not a probe.
+    const jar = await cookies();
+    return SESSION_COOKIE_NAMES.some((name) => jar.has(name)) ? (
+      <StaffOnGuestSurface />
+    ) : (
+      <ScanFailed />
+    );
   }
 
   const { context } = session;
