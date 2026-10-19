@@ -8,6 +8,7 @@
  */
 "use client";
 
+import { SkeletonRows } from "@foodos/ui/skeleton";
 import type { OutputOf } from "@foodos/contracts";
 import { Badge } from "@foodos/ui/badge";
 import { Button } from "@foodos/ui/button";
@@ -157,7 +158,7 @@ export function ModifiersManager({ items }: { items: Item[] }) {
       {create.error === null ? null : <Denial error={create.error} />}
 
       {modifiers.data === undefined ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <SkeletonRows />
       ) : modifiers.data.items.length === 0 ? (
         <Empty
           icon="➕"

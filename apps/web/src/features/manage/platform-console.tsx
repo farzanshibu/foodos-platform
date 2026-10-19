@@ -26,6 +26,7 @@
  */
 "use client";
 
+import { SkeletonRows } from "@foodos/ui/skeleton";
 import type { InputOf, OutputOf } from "@foodos/contracts";
 import { PLAN_KEYS, PLANS } from "@foodos/registry";
 import { Badge } from "@foodos/ui/badge";
@@ -451,7 +452,7 @@ function OrganisationRow({ row }: { row: Organisation }) {
  */
 function Waiting({ error }: { error: DenialError | null }) {
   return error === null ? (
-    <p className="text-muted-foreground text-sm">Loading…</p>
+    <SkeletonRows />
   ) : (
     <Denial error={error} resource="platformAdmin" />
   );

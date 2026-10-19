@@ -32,7 +32,7 @@ export function NavLink({ item }: { item: NavEntryAccess }) {
         "relative flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm",
         "transition-colors duration-[var(--duration-hover)] ease-[var(--ease-out)]",
         current
-          ? "bg-card font-medium text-foreground shadow-xs"
+          ? "bg-primary/10 font-medium text-primary"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground",
         item.locked && !current && "text-muted-foreground/70",
       )}

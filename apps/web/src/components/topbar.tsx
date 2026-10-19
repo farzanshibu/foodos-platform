@@ -34,7 +34,7 @@ export function Topbar({ role }: { readonly role: OrgRole }) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-border border-b bg-background/85 px-4 backdrop-blur-md md:px-8">
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-border border-b bg-surface/80 px-4 backdrop-blur-xl backdrop-saturate-[1.8] md:px-8">
       <div className="flex min-w-0 items-center gap-2">
         <span className="size-5 shrink-0 rounded-[6px] bg-primary md:hidden" aria-hidden="true" />
         <p className="truncate font-medium text-sm">{titleFor(pathname)}</p>

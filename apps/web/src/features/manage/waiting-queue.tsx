@@ -10,6 +10,7 @@
  */
 "use client";
 
+import { SkeletonRows } from "@foodos/ui/skeleton";
 import type { OutputOf } from "@foodos/contracts";
 import { Badge } from "@foodos/ui/badge";
 import { Button } from "@foodos/ui/button";
@@ -75,7 +76,7 @@ export function WaitingQueue({ branchId }: { branchId: string }) {
   const occupy = useMutation(trpc.place.floorAction.mutationOptions({ onSuccess: refresh }));
 
   if (carts.data === undefined) {
-    return <p className="text-muted-foreground text-sm">Loading…</p>;
+    return <SkeletonRows />;
   }
 
   if (carts.data.items.length === 0) {
