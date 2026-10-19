@@ -24,6 +24,28 @@ import { resolveScan } from "@/gateway/public-call";
 /** The bus speaks TCP, which the edge runtime cannot. */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** Long enough for an idle services host to start, which is the one slow thing a scan can meet. */
+export const maxDuration = 60;
+
+/**
+ * True only when the services host was asleep and has now come up. A host that answers at
+ * once was awake, so the first failure was real and is not retried; a host that never answers
+ * is down, and retrying would only be slower. Branches on the host's state, never on what
+ * the scan was refused for, so the failure screen still tells a guesser nothing.
+ */
+async function hostWokeUp(): Promise<boolean> {
+  const base = env.servicesUrl();
+  if (base === null) return false;
+  const started = Date.now();
+  try {
+    const response = await fetch(`${base.replace(/\/$/, "")}/health`, {
+      signal: AbortSignal.timeout(55_000),
+    });
+    return response.ok && Date.now() - started > 2_000;
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -33,7 +55,13 @@ export async function GET(
 
   let session: Awaited<ReturnType<typeof resolveScan>>;
   try {
-    session = await resolveScan(token);
+    try {
+      session = await resolveScan(token);
+    } catch (first) {
+      // One retry, and only if the host had been idle: see hostWokeUp.
+      if (!(await hostWokeUp())) throw first;
+      session = await resolveScan(token);
+    }
   } catch {
     /**
      * Every failure looks the same on purpose: a revoked code and a typo are both "ask us".
