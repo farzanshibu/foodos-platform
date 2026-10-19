@@ -17,7 +17,12 @@ import {
   jetstream,
   jetstreamManager,
 } from "@nats-io/jetstream";
-import { connect, type NatsConnection, nkeyAuthenticator } from "@nats-io/transport-node";
+import {
+  connect,
+  credsAuthenticator,
+  type NatsConnection,
+  nkeyAuthenticator,
+} from "@nats-io/transport-node";
 
 /**
  * Declared rather than asserted. Next.js re-evaluates modules on every hot reload, so
@@ -38,14 +43,21 @@ export const natsUrl = env.natsUrl;
 export function connection(): Promise<NatsConnection> {
   const user = env.natsUser();
   const seed = env.natsNkeySeed();
+  const creds = env.natsCreds();
+  // exactOptionalPropertyTypes: an absent credential is an absent key, never `undefined`.
+  const auth =
+    creds !== null
+      ? { authenticator: credsAuthenticator(new TextEncoder().encode(creds)) }
+      : seed !== null
+        ? { authenticator: nkeyAuthenticator(new TextEncoder().encode(seed)) }
+        : {};
   globalThis.__foodosNats ??= connect({
     servers: natsUrl(),
     name: user,
     inboxPrefix: `_INBOX.${user}`,
     maxReconnectAttempts: -1,
     reconnectTimeWait: 500,
-    // exactOptionalPropertyTypes: an absent seed is an absent key, never `undefined`.
-    ...(seed === null ? {} : { authenticator: nkeyAuthenticator(new TextEncoder().encode(seed)) }),
+    ...auth,
   });
   return globalThis.__foodosNats;
 }

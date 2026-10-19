@@ -17,6 +17,7 @@
     "DATABASE_URL",
     "DEV_PLAN",
     "ENVELOPE_SECRET",
+    "NATS_CREDS",
     "NATS_NKEY_SEED",
     "NATS_URL",
     "NATS_USER",
