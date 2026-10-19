@@ -56,19 +56,31 @@ export const natsUrl = env.natsUrl;
 export function connection(): Promise<NatsConnection> {
   const scope = connectionScope.getStore();
   if (scope === undefined) {
-    globalThis.__foodosNats ??= open(env.natsUser());
+    // A failed connect must not be cached, or every later request replays the same failure.
+    globalThis.__foodosNats ??= open(env.natsUser()).catch((error: unknown) => {
+      globalThis.__foodosNats = undefined;
+      throw error;
+    });
     return globalThis.__foodosNats;
   }
   const scoped = (globalThis.__foodosNatsScoped ??= new Map());
   let pending = scoped.get(scope);
   if (pending === undefined) {
-    pending = open(`${env.natsUser()}-${scope}`, true);
+    pending = open(`${env.natsUser()}-${scope}`, true).catch((error: unknown) => {
+      scoped.delete(scope);
+      throw error;
+    });
     scoped.set(scope, pending);
   }
   return pending;
 }
 
-function open(name: string, patient = false): Promise<NatsConnection> {
+/**
+ * One connect attempt per DNS answer, retried a few times. A hosted bus's name resolves to
+ * several addresses and an occasional one fails the TLS name check (ERR_TLS_CERT_ALTNAME_INVALID),
+ * so a single failed dial is not the bus being down; the next attempt draws another address.
+ */
+async function open(name: string, patient = false): Promise<NatsConnection> {
   const seed = env.natsNkeySeed();
   const creds = env.natsCreds();
   // exactOptionalPropertyTypes: an absent credential is an absent key, never `undefined`.
@@ -78,23 +90,27 @@ function open(name: string, patient = false): Promise<NatsConnection> {
       : seed !== null
         ? { authenticator: nkeyAuthenticator(new TextEncoder().encode(seed)) }
         : {};
-  return connect({
-    servers: natsUrl(),
-    name,
-    inboxPrefix: `_INBOX.${name}`,
-    maxReconnectAttempts: -1,
-    reconnectTimeWait: 500,
-    // A hosted bus advertises its cluster peers by address; dialling those fails the TLS name
-    // check (ERR_TLS_CERT_ALTNAME_INVALID). Keep dialling the configured name, and keep
-    // trying on the first connect rather than failing the whole process on one bad dial.
-    ignoreClusterUpdates: true,
-    // Dial the hostname itself so the TLS name is the hostname; pre-resolved addresses
-    // sometimes reached the check with no name at all.
-    resolve: false,
-    // A long-running service keeps trying; a request-serving gateway must fail fast instead.
-    waitOnFirstConnect: patient,
-    ...auth,
-  });
+  const attempts = patient ? 60 : 6;
+  let last: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await connect({
+        servers: natsUrl(),
+        name,
+        inboxPrefix: `_INBOX.${name}`,
+        maxReconnectAttempts: -1,
+        reconnectTimeWait: 500,
+        // Keep dialling the configured name rather than peers the bus advertises by address.
+        ignoreClusterUpdates: true,
+        timeout: 5_000,
+        ...auth,
+      });
+    } catch (error) {
+      last = error;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
+  throw last;
 }
 
 export async function js(): Promise<JetStreamClient> {
