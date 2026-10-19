@@ -141,7 +141,7 @@ export function CartPage({
       ...(table.cartId === null ? {} : { cartId: table.cartId }),
       lines,
       ...(applied === null ? {} : { couponCode: applied }),
-      guestName: name.trim(),
+      ...(name.trim() === "" ? {} : { guestName: name.trim() }),
       ...(phone.trim() === "" ? {} : { guestPhone: phone.trim() }),
     });
   };
@@ -190,7 +190,6 @@ export function CartPage({
         placeLabel={destination.label}
         waiting={waiting}
         ready={priced !== undefined}
-        name={name}
         busy={send.isPending || place.isPending}
         totalPaise={priced?.totalPaise ?? 0}
         onSend={() => {
@@ -212,7 +211,6 @@ function CheckoutButton({
   placeLabel,
   waiting,
   ready,
-  name,
   busy,
   totalPaise,
   onSend,
@@ -223,7 +221,6 @@ function CheckoutButton({
   placeLabel: string | null;
   waiting: boolean;
   ready: boolean;
-  name: string;
   busy: boolean;
   totalPaise: number;
   onSend: () => void;
@@ -243,7 +240,7 @@ function CheckoutButton({
       <Button
         className="w-full"
         size="lg"
-        disabled={!ready || busy || name.trim() === ""}
+        disabled={!ready || busy}
         onClick={() => {
           onPlace(placeId);
         }}
@@ -262,7 +259,7 @@ function CheckoutButton({
     <Button
       className="w-full"
       size="lg"
-      disabled={!ready || busy || name.trim() === ""}
+      disabled={!ready || busy}
       onClick={onSend}
     >
       {busy ? "Sending…" : `Send order · ${money(totalPaise)}`}
@@ -580,7 +577,7 @@ function GuestDetails({
           onChange={(event) => {
             onName(event.target.value);
           }}
-          placeholder="Your name"
+          placeholder="Your name (optional)"
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
         />
         <input
