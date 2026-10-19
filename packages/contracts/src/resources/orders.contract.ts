@@ -366,12 +366,24 @@ export const orderContract = {
         orderType: z.enum(ORDER_TYPES),
         placeId: z.string().nullable().optional(),
         cartId: z.string().optional(),
-        lines: z.array(cartLineInput).min(1).max(50),
+        /**
+         * Empty is allowed ONLY when a basket is named: a table sharing one holds its dishes on
+         * the server, so the phone confirming has none of its own. The service reads the
+         * basket and refuses an empty one; this refine refuses "no dishes and no basket".
+         */
+        lines: z.array(cartLineInput).max(50).default([]),
         couponCode: z.string().max(30).optional(),
         notes: z.string().max(500).optional(),
         ...guestContact,
       })
       .superRefine((value, ctx) => {
+        if (value.lines.length === 0 && value.cartId === undefined) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["lines"],
+            message: "Add at least one dish to order.",
+          });
+        }
         if (value.orderType === "dine_in" && value.placeId == null) {
           ctx.addIssue({
             code: "custom",
