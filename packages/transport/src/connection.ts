@@ -84,6 +84,11 @@ function open(name: string): Promise<NatsConnection> {
     inboxPrefix: `_INBOX.${name}`,
     maxReconnectAttempts: -1,
     reconnectTimeWait: 500,
+    // A hosted bus advertises its cluster peers by address; dialling those fails the TLS name
+    // check (ERR_TLS_CERT_ALTNAME_INVALID). Keep dialling the configured name, and keep
+    // trying on the first connect rather than failing the whole process on one bad dial.
+    ignoreClusterUpdates: true,
+    waitOnFirstConnect: true,
     ...auth,
   });
 }
