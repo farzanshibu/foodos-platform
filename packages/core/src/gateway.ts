@@ -299,6 +299,11 @@ export async function dispatch<K extends ResourceKey, O extends OperationOf<K>>(
     if (error instanceof ServiceError) {
       return fail(toFailure({ code: error.code, message: error.message, data: error.data }));
     }
+    // Masked for the caller on purpose; the log is where an operator learns why.
+    console.error(
+      `[gateway] ${rpcSubject(resource, operation)} failed:`,
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+    );
     return fail({
       code: "SERVICE_UNAVAILABLE",
       message: `The ${definition.owner} service did not respond. Try again shortly.`,

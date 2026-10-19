@@ -132,7 +132,12 @@ export const env = {
   /** Same value in the gateway and every service, or services reject every envelope. */
   envelopeSecret: (): string => requireSecret("ENVELOPE_SECRET"),
   databaseUrl: (): string => required("DATABASE_URL"),
-  natsUrl: (): string => optional("NATS_URL") ?? "nats://localhost:4222",
+  natsUrl: (): string => {
+    const url = optional("NATS_URL") ?? "nats://localhost:4222";
+    // A URL with no port made the client dial "localhost" for the TLS name on some connects
+    // (ERR_TLS_CERT_ALTNAME_INVALID against a hosted bus), so the default port is explicit.
+    return /^[a-z]+:\/\/[^:/]+$/.test(url) ? `${url}:4222` : url;
+  },
   /** Names the NATS credential this process holds. See infra/nats/auth.conf. */
   natsUser: (): string => optional("NATS_USER") ?? optional("SERVICE_NAME") ?? "gateway",
   /**
@@ -185,6 +190,8 @@ export const env = {
    * surface that opens because a variable was forgotten is the wrong kind of surprise.
    */
   platformOrgId: (): string | null => optional("PLATFORM_ORG_ID"),
+  /** Base URL of the services host, only for waking it when it idles. Null where it never does. */
+  servicesUrl: (): string | null => optional("SERVICES_URL"),
   serviceName: (): string => optional("SERVICE_NAME") ?? "gateway",
   isProduction: (): boolean => process.env["NODE_ENV"] === "production",
   rateLimitInDev: (): boolean => optional("RATE_LIMIT_DEV") === "on",

@@ -12,6 +12,7 @@
  */
 "use client";
 
+import { SkeletonRows } from "@foodos/ui/skeleton";
 import type { OutputOf } from "@foodos/contracts";
 import { Badge } from "@foodos/ui/badge";
 import { Button } from "@foodos/ui/button";
@@ -229,7 +230,7 @@ export function CardDesigner({ requestTypes }: { requestTypes: RequestType[] }) 
       {render.error === null ? null : <Denial error={render.error} />}
 
       {designs.data === undefined ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <SkeletonRows />
       ) : designs.data.items.length === 0 ? (
         <Empty
           icon="🖨️"

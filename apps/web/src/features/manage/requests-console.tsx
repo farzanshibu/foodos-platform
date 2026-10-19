@@ -10,6 +10,7 @@
  */
 "use client";
 
+import { SkeletonRows } from "@foodos/ui/skeleton";
 import type { OutputOf } from "@foodos/contracts";
 import { Badge } from "@foodos/ui/badge";
 import { Button } from "@foodos/ui/button";
@@ -114,7 +115,7 @@ export function RequestsConsole({ branches }: { branches: Branch[] }) {
       {act.error === null ? null : <Denial error={act.error} />}
 
       {requests.data === undefined ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <SkeletonRows />
       ) : ordered.length === 0 ? (
         <Empty
           icon="🔔"

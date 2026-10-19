@@ -34,6 +34,7 @@ import Link from "next/link";
 
 import { NavLink } from "@/components/nav-link";
 import { billingHref, route } from "@/components/nav-links";
+import { NavSection } from "@/components/nav-section";
 import { ThemeToggle } from "@/features/table/theme";
 
 export type SidebarNudge = { readonly title: string; readonly detail: string | null };
@@ -50,33 +51,35 @@ export function Sidebar({
   return (
     <nav
       aria-label="Main"
-      className="hidden w-60 shrink-0 flex-col border-border border-r bg-surface md:flex"
+      className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col self-start border-border border-r bg-surface md:flex"
     >
-      <div className="flex h-14 items-center gap-2 border-border border-b px-5">
+      <div className="flex h-12 items-center gap-2 border-border border-b px-4">
         <span className="size-5 rounded-[6px] bg-primary" aria-hidden="true" />
         <span className="font-semibold text-[15px] tracking-[-0.01em]">FoodOS</span>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
-        {sectionsOf(items).map((section) => (
-          <div key={section.group ?? "_"} className="mb-5 last:mb-0">
-            {section.group === null ? null : (
-              <p className="px-2 pb-1.5 font-medium text-2xs text-muted-foreground uppercase tracking-[0.08em]">
-                {section.group}
-              </p>
-            )}
-            <ul className="space-y-0.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+        {sectionsOf(items).map((section, index) =>
+          section.group === null ? (
+            <ul key="_" className="space-y-0.5 pt-2">
               {section.items.map((item) => (
                 <li key={item.href}>
                   <NavLink item={item} />
                 </li>
               ))}
             </ul>
-          </div>
-        ))}
+          ) : (
+            <NavSection
+              key={section.group}
+              group={section.group}
+              items={section.items}
+              first={index === 0}
+            />
+          ),
+        )}
       </div>
 
-      <div className="space-y-3 border-border border-t p-3">
+      <div className="space-y-2 border-border border-t p-2.5">
         {nudge === null ? null : (
           <Link
             className="group block rounded-md border border-border bg-card p-3 text-sm shadow-xs transition-colors duration-150 hover:border-border-strong hover:bg-accent"

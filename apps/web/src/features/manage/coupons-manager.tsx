@@ -8,6 +8,7 @@
  */
 "use client";
 
+import { SkeletonRows } from "@foodos/ui/skeleton";
 import type { OutputOf } from "@foodos/contracts";
 import { Badge } from "@foodos/ui/badge";
 import { Button } from "@foodos/ui/button";
@@ -114,7 +115,7 @@ export function CouponsManager({ promotions }: { promotions: Promotion[] }) {
           detail="Create a promotion first — a code on its own has nothing to give away."
         />
       ) : coupons.data === undefined ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <SkeletonRows />
       ) : coupons.data.items.length === 0 ? (
         <Empty
           icon="🎟️"

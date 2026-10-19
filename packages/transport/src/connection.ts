@@ -11,6 +11,8 @@
 import "server-only";
 
 import { env } from "@foodos/env";
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import {
   type JetStreamClient,
   type JetStreamManager,
@@ -30,7 +32,18 @@ import {
  */
 declare global {
   var __foodosNats: Promise<NatsConnection> | undefined;
+  var __foodosNatsScoped: Map<string, Promise<NatsConnection>> | undefined;
 }
+
+/**
+ * Run code inside a scope and every `connection()` it makes - including from callbacks and
+ * awaits it starts - opens its own named connection instead of sharing the process one.
+ *
+ * Why this exists: a hosted bus caps subscriptions per connection, and several services in
+ * one process would otherwise pile all of theirs onto a single connection and silently lose
+ * the ones past the cap. The cap is per connection, so a connection per service stays under it.
+ */
+export const connectionScope = new AsyncLocalStorage<string>();
 
 export const natsUrl = env.natsUrl;
 
@@ -41,7 +54,33 @@ export const natsUrl = env.natsUrl;
  * service cannot subscribe to the gateway's inbox and read every answer crossing the bus.
  */
 export function connection(): Promise<NatsConnection> {
-  const user = env.natsUser();
+  const scope = connectionScope.getStore();
+  if (scope === undefined) {
+    // A failed connect must not be cached, or every later request replays the same failure.
+    globalThis.__foodosNats ??= open(env.natsUser()).catch((error: unknown) => {
+      globalThis.__foodosNats = undefined;
+      throw error;
+    });
+    return globalThis.__foodosNats;
+  }
+  const scoped = (globalThis.__foodosNatsScoped ??= new Map());
+  let pending = scoped.get(scope);
+  if (pending === undefined) {
+    pending = open(`${env.natsUser()}-${scope}`, true).catch((error: unknown) => {
+      scoped.delete(scope);
+      throw error;
+    });
+    scoped.set(scope, pending);
+  }
+  return pending;
+}
+
+/**
+ * One connect attempt per DNS answer, retried a few times. A hosted bus's name resolves to
+ * several addresses and an occasional one fails the TLS name check (ERR_TLS_CERT_ALTNAME_INVALID),
+ * so a single failed dial is not the bus being down; the next attempt draws another address.
+ */
+async function open(name: string, patient = false): Promise<NatsConnection> {
   const seed = env.natsNkeySeed();
   const creds = env.natsCreds();
   // exactOptionalPropertyTypes: an absent credential is an absent key, never `undefined`.
@@ -51,15 +90,27 @@ export function connection(): Promise<NatsConnection> {
       : seed !== null
         ? { authenticator: nkeyAuthenticator(new TextEncoder().encode(seed)) }
         : {};
-  globalThis.__foodosNats ??= connect({
-    servers: natsUrl(),
-    name: user,
-    inboxPrefix: `_INBOX.${user}`,
-    maxReconnectAttempts: -1,
-    reconnectTimeWait: 500,
-    ...auth,
-  });
-  return globalThis.__foodosNats;
+  const attempts = patient ? 60 : 6;
+  let last: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await connect({
+        servers: natsUrl(),
+        name,
+        inboxPrefix: `_INBOX.${name}`,
+        maxReconnectAttempts: -1,
+        reconnectTimeWait: 500,
+        // Keep dialling the configured name rather than peers the bus advertises by address.
+        ignoreClusterUpdates: true,
+        timeout: 5_000,
+        ...auth,
+      });
+    } catch (error) {
+      last = error;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
+  throw last;
 }
 
 export async function js(): Promise<JetStreamClient> {
@@ -71,10 +122,10 @@ export async function jsm(): Promise<JetStreamManager> {
 }
 
 export async function closeConnection(): Promise<void> {
-  const pending = globalThis.__foodosNats;
-  if (pending === undefined) return;
+  const all = [globalThis.__foodosNats, ...(globalThis.__foodosNatsScoped?.values() ?? [])];
   globalThis.__foodosNats = undefined;
-  await (await pending).drain();
+  globalThis.__foodosNatsScoped = undefined;
+  await Promise.all(all.map(async (pending) => (await pending)?.drain()));
 }
 
 export const encode = (value: unknown): Uint8Array =>

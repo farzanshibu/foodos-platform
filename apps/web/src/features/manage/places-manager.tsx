@@ -16,6 +16,7 @@
  */
 "use client";
 
+import { SkeletonRows } from "@foodos/ui/skeleton";
 import type { OutputOf } from "@foodos/contracts";
 import { Button } from "@foodos/ui/button";
 import { Card, CardContent } from "@foodos/ui/card";
@@ -383,7 +384,7 @@ function PlacesBody({
   onSelect: (id: string) => void;
   editor: React.ReactNode;
 }) {
-  if (loading) return <p className="text-muted-foreground text-sm">Loading…</p>;
+  if (loading) return <SkeletonRows />;
   if (places.length === 0) {
     return (
       <Empty

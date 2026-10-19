@@ -8,6 +8,7 @@
  */
 "use client";
 
+import { SkeletonRows } from "@foodos/ui/skeleton";
 import { Badge } from "@foodos/ui/badge";
 import { Denial } from "@foodos/ui/denial";
 import { useQuery } from "@tanstack/react-query";
@@ -91,7 +92,7 @@ export function CustomersManager() {
       {customers.error === null ? null : <Denial error={customers.error} />}
 
       {customers.data === undefined ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <SkeletonRows />
       ) : customers.data.items.length === 0 ? (
         <Empty
           icon="👥"
