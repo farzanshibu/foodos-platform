@@ -1,5 +1,5 @@
 # All eleven FoodOS services in one container. Build from the repo root:
-#   docker build -f deploy/Dockerfile .
+#   docker build .
 FROM node:22-slim
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
