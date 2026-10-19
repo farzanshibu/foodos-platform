@@ -194,6 +194,12 @@ export const env = {
    * adapter, which is the only file allowed to have an opinion about what a plan is.
    */
   devPlan: (): string | null => optional("DEV_PLAN"),
+  /**
+   * The same override for a hosted demo with no billing vendor, where DEV_PLAN is refused
+   * because it is production. A separate name on purpose: setting it is a deliberate,
+   * logged decision to run a demo, never an accident of copying a dev .env.
+   */
+  demoPlan: (): string | null => optional("DEMO_PLAN"),
   /** Opt-out for a genuine single-instance deploy with no Upstash. See `ratelimit.ts`. */
   rateLimitAllowInMemory: (): boolean => optional("RATE_LIMIT_ALLOW_IN_MEMORY") === "on",
 } as const;
