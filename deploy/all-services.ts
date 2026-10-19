@@ -3,7 +3,7 @@
  *
  * For a free-tier host that gives one small web service rather than eleven. Each service
  * entry boots itself on import (subscribes, registers consumers), and they already carry
- * distinct queue groups and durable names. Each gets its own NATS connection (see connectionScope).
+ * distinct queue groups and durable names. Connections are shared by group (see GROUP and connectionScope).
  *
  *   tsx --conditions=react-server deploy/all-services.ts
  */
@@ -25,11 +25,30 @@ const SERVICES = [
   "requests",
 ] as const;
 
+/**
+ * Services share a NATS connection by group. A hosted free-tier bus caps BOTH connections
+ * (so not one per service) and subscriptions per connection (~50, so not all on one). Four
+ * groups of roughly equal subject counts stay under both. Counts come from `pnpm subjects`.
+ */
+const GROUP: Record<(typeof SERVICES)[number], string> = {
+  catalog: "g1",
+  audit: "g1",
+  billing: "g1",
+  crm: "g2",
+  orders: "g2",
+  qr: "g3",
+  floor: "g3",
+  requests: "g3",
+  identity: "g4",
+  insights: "g4",
+  projects: "g4",
+};
+
 const booted: string[] = [];
 
 for (const name of SERVICES) {
-  // One NATS connection per service: the hosted bus caps subscriptions per connection.
-  await connectionScope.run(name, () => import(`../services/${name}/src/index.ts`));
+  // One NATS connection per group, not per service; see GROUP.
+  await connectionScope.run(GROUP[name], () => import(`../services/${name}/src/index.ts`));
   booted.push(name);
   console.info(`[all] started ${name}`);
 }
