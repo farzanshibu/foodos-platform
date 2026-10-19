@@ -141,11 +141,18 @@ export const env = {
    */
   natsNkeySeed: (): string | null => {
     const seed = optional("NATS_NKEY_SEED");
-    if (seed === null && process.env["NODE_ENV"] === "production") {
-      throw new Error("Missing NATS_NKEY_SEED. The bus authenticates; see infra/nats/RUNBOOK.md.");
+    if (seed === null && optional("NATS_CREDS") === null && process.env["NODE_ENV"] === "production") {
+      throw new Error(
+        "Missing NATS_NKEY_SEED or NATS_CREDS. The bus authenticates; see infra/nats/RUNBOOK.md.",
+      );
     }
     return seed;
   },
+  /**
+   * The contents of a `.creds` file, for a hosted NATS (Synadia Cloud) that authenticates
+   * with a signed user JWT instead of a seed in a server-side config. Wins over a seed.
+   */
+  natsCreds: (): string | null => optional("NATS_CREDS"),
   /** Browser-safe. Anything shipped to the client must call this one. */
   publicAppUrl,
   /** The server-side name for the same read, so the two can never drift apart. */

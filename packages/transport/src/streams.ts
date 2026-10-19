@@ -24,6 +24,8 @@ export async function ensureStreams(): Promise<string[]> {
       subjects: [...stream.subjects],
       description: stream.description,
       max_age: stream.maxAgeDays * 24 * 60 * 60 * 1_000_000_000, // nanoseconds
+      /** A hosted bus with account storage limits refuses a stream with no byte cap. */
+      max_bytes: 512 * 1024 * 1024,
       /** Dedupe window: a redelivered command with the same Nats-Msg-Id is dropped. */
       duplicate_window: 2 * 60 * 1_000_000_000,
     };
