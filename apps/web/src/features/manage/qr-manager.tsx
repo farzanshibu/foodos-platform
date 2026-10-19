@@ -47,7 +47,7 @@ export function QrManager({
 
   const codes = useQuery(
     trpc.qrCode.list.queryOptions({
-      limit: 200,
+      limit: 100,
       cursor: null,
       ...(branchId === "" ? {} : { branchId }),
     }),
@@ -128,7 +128,10 @@ export function QrManager({
         </Card>
       )}
 
-      {codes.data === undefined ? (
+      {codes.error !== null ? (
+        // A failed read is not a loading one; saying "Loading…" forever hid the real error.
+        <Denial error={codes.error} />
+      ) : codes.data === undefined ? (
         <SkeletonRows />
       ) : codes.data.items.length === 0 ? (
         <Empty
