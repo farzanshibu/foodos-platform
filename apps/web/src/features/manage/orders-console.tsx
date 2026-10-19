@@ -46,6 +46,8 @@ const BUCKETS = [
  */
 function nextStep(status: string): { action: Action; label: string } | null {
   switch (status) {
+    // Unpaid is fine: payment is taken at the end, so an order can be accepted on arrival.
+    case "payment_pending":
     case "paid":
       return { action: "accept", label: "Accept" };
     case "accepted":
@@ -87,6 +89,15 @@ export function OrdersConsole({ branches }: { branches: Branch[] }) {
     }),
   );
 
+  /** The bill, settled at the end of the meal: records the cash and leaves the status alone. */
+  const collect = useMutation(
+    trpc.payment.paymentAction.mutationOptions({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: trpc.order.list.queryKey() });
+      },
+    }),
+  );
+
   return (
     <PageShell
       title="Orders"
@@ -114,6 +125,7 @@ export function OrdersConsole({ branches }: { branches: Branch[] }) {
       </div>
 
       {move.error === null ? null : <Denial error={move.error} />}
+      {collect.error === null ? null : <Denial error={collect.error} />}
 
       {/* Baskets sent from the door are not orders yet, so they get their own view. */}
       {bucket === "waiting" ? (
@@ -139,7 +151,14 @@ export function OrdersConsole({ branches }: { branches: Branch[] }) {
                       : { action, id: order.id },
                   );
                 }}
-                pending={move.isPending}
+                onCollect={() => {
+                  collect.mutate({
+                    action: "record_cash",
+                    orderId: order.id,
+                    amountPaise: order.totalPaise,
+                  });
+                }}
+                pending={move.isPending || collect.isPending}
               />
             </li>
           ))}
@@ -152,13 +171,19 @@ export function OrdersConsole({ branches }: { branches: Branch[] }) {
 function OrderCard({
   order,
   onAction,
+  onCollect,
   pending,
 }: {
   order: Order;
   onAction: (action: Action | "cancel") => void;
+  onCollect: () => void;
   pending: boolean;
 }) {
   const step = nextStep(order.status);
+  /** Pay-at-the-end: the bill is due once the food is out, and stays visible until settled. */
+  const owesBill =
+    order.paymentStatus !== "paid" &&
+    (order.status === "ready" || order.status === "served" || order.status === "completed");
 
   return (
     <Card className="h-full">
@@ -173,9 +198,14 @@ function OrderCard({
               {order.guestName === null ? "" : ` · ${order.guestName}`}
             </p>
           </div>
-          <Badge variant={order.paymentStatus === "paid" ? "secondary" : "outline"}>
-            {order.status.replace(/_/g, " ")}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant="secondary">
+              {order.status === "payment_pending" ? "new" : order.status.replace(/_/g, " ")}
+            </Badge>
+            <Badge variant={order.paymentStatus === "paid" ? "secondary" : "outline"}>
+              {order.paymentStatus === "paid" ? "paid" : owesBill ? "bill due" : "pay at end"}
+            </Badge>
+          </div>
         </div>
 
         <ul className="flex-1 space-y-1 text-sm">
@@ -204,6 +234,14 @@ function OrderCard({
           <span>Total</span>
           <span>{money(order.totalPaise)}</span>
         </p>
+
+        {owesBill ? (
+          <Gate resource="payment" operation="manage">
+            <Button disabled={pending} onClick={onCollect}>
+              Collect payment {money(order.totalPaise)}
+            </Button>
+          </Gate>
+        ) : null}
 
         <Gate resource="order" operation="manage">
           <div className="flex gap-2">
