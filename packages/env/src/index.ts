@@ -192,6 +192,14 @@ export const env = {
   platformOrgId: (): string | null => optional("PLATFORM_ORG_ID"),
   /** Base URL of the services host, only for waking it when it idles. Null where it never does. */
   servicesUrl: (): string | null => optional("SERVICES_URL"),
+  /**
+   * Where a request-serving process sends bus traffic over HTTPS instead of opening its own
+   * NATS connection - for a hosted bus that caps connections account-wide while serverless
+   * opens one per instance. Null means talk to the bus directly, which is the normal case.
+   */
+  busBridgeUrl: (): string | null => optional("BUS_BRIDGE_URL"),
+  /** Shared secret between the bridge's two ends; the bridge refuses a call without it. */
+  busBridgeToken: (): string | null => optional("BUS_BRIDGE_TOKEN"),
   serviceName: (): string => optional("SERVICE_NAME") ?? "gateway",
   isProduction: (): boolean => process.env["NODE_ENV"] === "production",
   rateLimitInDev: (): boolean => optional("RATE_LIMIT_DEV") === "on",

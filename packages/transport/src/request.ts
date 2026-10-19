@@ -27,18 +27,53 @@ import { z } from "zod";
 
 import { connection, decode, encode, js } from "./connection";
 
+/**
+ * Over HTTPS to the process that holds the bus connections, when one is configured. The
+ * envelope and reply are exactly what would have crossed NATS - signed by the same keys and
+ * verified by the same checks below - so the bridge adds a hop, not a new trust boundary.
+ * The shared token only stops strangers from using the bridge as a free relay.
+ */
+async function bridgePost(path: string, body: unknown, timeoutMs: number): Promise<Response> {
+  const base = env.busBridgeUrl();
+  const token = env.busBridgeToken();
+  if (base === null || token === null) throw new Error("bus bridge is not configured");
+  const response = await fetch(`${base.replace(/\/$/, "")}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+    // The host may be waking from idle, which a plain NATS timeout would never allow for.
+    signal: AbortSignal.timeout(timeoutMs + 20_000),
+  });
+  if (!response.ok) throw new Error(`bus bridge answered ${String(response.status)}`);
+  return response;
+}
+
+/** The bus half of an RPC, with no verification: raw reply bytes, decoded. */
+export async function rpcRaw(subject: string, envelope: Envelope, timeoutMs: number): Promise<unknown> {
+  if (env.busBridgeUrl() !== null) {
+    return (await bridgePost("/bridge/rpc", { subject, envelope, timeoutMs }, timeoutMs)).json();
+  }
+  return rpcRawDirect(subject, envelope, timeoutMs);
+}
+
+/** Straight to NATS. What the bridge itself calls, and what everything uses without one. */
+export async function rpcRawDirect(
+  subject: string,
+  envelope: Envelope,
+  timeoutMs: number,
+): Promise<unknown> {
+  const nc = await connection();
+  const message = await nc.request(subject, encode(envelope), { timeout: timeoutMs });
+  return decode(message.data);
+}
+
 /** Synchronous call. Rejects on timeout so the gateway can map it to a clean error. */
 export async function rpcRequest<TReply>(args: {
   subject: string;
   envelope: Envelope;
   timeoutMs: number;
 }): Promise<ReplyEnvelope<TReply>> {
-  const nc = await connection();
-  const message = await nc.request(args.subject, encode(args.envelope), {
-    timeout: args.timeoutMs,
-  });
-
-  const parsed = replyEnvelope.safeParse(decode(message.data));
+  const parsed = replyEnvelope.safeParse(await rpcRaw(args.subject, args.envelope, args.timeoutMs));
   if (!parsed.success) {
     throw new ServiceError(
       "UNTRUSTED_ENVELOPE",
@@ -104,6 +139,17 @@ export async function rpcRequest<TReply>(args: {
  * server inside the stream's duplicate window rather than running twice.
  */
 export async function publishCommand(args: { subject: string; envelope: Envelope }): Promise<void> {
+  if (env.busBridgeUrl() !== null) {
+    await bridgePost("/bridge/command", args, 5_000);
+    return;
+  }
+  await publishCommandDirect(args);
+}
+
+export async function publishCommandDirect(args: {
+  subject: string;
+  envelope: Envelope;
+}): Promise<void> {
   const stream = await js();
   await stream.publish(args.subject, encode(args.envelope), {
     msgID: args.envelope.meta.requestId,
