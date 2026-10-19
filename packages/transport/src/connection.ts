@@ -62,13 +62,13 @@ export function connection(): Promise<NatsConnection> {
   const scoped = (globalThis.__foodosNatsScoped ??= new Map());
   let pending = scoped.get(scope);
   if (pending === undefined) {
-    pending = open(`${env.natsUser()}-${scope}`);
+    pending = open(`${env.natsUser()}-${scope}`, true);
     scoped.set(scope, pending);
   }
   return pending;
 }
 
-function open(name: string): Promise<NatsConnection> {
+function open(name: string, patient = false): Promise<NatsConnection> {
   const seed = env.natsNkeySeed();
   const creds = env.natsCreds();
   // exactOptionalPropertyTypes: an absent credential is an absent key, never `undefined`.
@@ -88,7 +88,11 @@ function open(name: string): Promise<NatsConnection> {
     // check (ERR_TLS_CERT_ALTNAME_INVALID). Keep dialling the configured name, and keep
     // trying on the first connect rather than failing the whole process on one bad dial.
     ignoreClusterUpdates: true,
-    waitOnFirstConnect: true,
+    // Dial the hostname itself so the TLS name is the hostname; pre-resolved addresses
+    // sometimes reached the check with no name at all.
+    resolve: false,
+    // A long-running service keeps trying; a request-serving gateway must fail fast instead.
+    waitOnFirstConnect: patient,
     ...auth,
   });
 }
