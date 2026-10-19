@@ -22,6 +22,9 @@ export function NavLink({ item }: { item: NavEntryAccess }) {
 
   return (
     <Link
+      // Each prefetch of a dynamic page is a server render, and each server instance holds its
+      // own bus connection; a free-tier bus caps those, so nav links load on click instead.
+      prefetch={false}
       href={route(
         item.locked && billingHref !== undefined
           ? `${billingHref}?locked=${item.resource}`

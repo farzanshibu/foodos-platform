@@ -81,6 +81,7 @@ function BarLink({
 }) {
   return (
     <Link
+      prefetch={false}
       href={route(href)}
       aria-current={active ? "page" : undefined}
       className={cn(
