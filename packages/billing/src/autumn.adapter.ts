@@ -61,10 +61,12 @@ const autumn = secretKey ? new Autumn({ secretKey }) : null;
  * dev machine is a limit whose far side nobody can test.
  */
 function resolveDevPlan(): PlanKey | null {
-  const named = env.devPlan();
+  const demo = env.demoPlan();
+  const named = demo ?? env.devPlan();
   if (named === null) return null;
 
-  if (env.isProduction()) {
+  // DEMO_PLAN is the explicit hosted-demo opt-in; only the dev override is barred in production.
+  if (demo === null && env.isProduction()) {
     throw new Error(
       "DEV_PLAN is set in production. Plans come from Autumn there; remove the variable.",
     );
