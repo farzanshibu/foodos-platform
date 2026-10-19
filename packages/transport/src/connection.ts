@@ -11,6 +11,8 @@
 import "server-only";
 
 import { env } from "@foodos/env";
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import {
   type JetStreamClient,
   type JetStreamManager,
@@ -30,7 +32,18 @@ import {
  */
 declare global {
   var __foodosNats: Promise<NatsConnection> | undefined;
+  var __foodosNatsScoped: Map<string, Promise<NatsConnection>> | undefined;
 }
+
+/**
+ * Run code inside a scope and every `connection()` it makes - including from callbacks and
+ * awaits it starts - opens its own named connection instead of sharing the process one.
+ *
+ * Why this exists: a hosted bus caps subscriptions per connection, and several services in
+ * one process would otherwise pile all of theirs onto a single connection and silently lose
+ * the ones past the cap. The cap is per connection, so a connection per service stays under it.
+ */
+export const connectionScope = new AsyncLocalStorage<string>();
 
 export const natsUrl = env.natsUrl;
 
@@ -41,7 +54,21 @@ export const natsUrl = env.natsUrl;
  * service cannot subscribe to the gateway's inbox and read every answer crossing the bus.
  */
 export function connection(): Promise<NatsConnection> {
-  const user = env.natsUser();
+  const scope = connectionScope.getStore();
+  if (scope === undefined) {
+    globalThis.__foodosNats ??= open(env.natsUser());
+    return globalThis.__foodosNats;
+  }
+  const scoped = (globalThis.__foodosNatsScoped ??= new Map());
+  let pending = scoped.get(scope);
+  if (pending === undefined) {
+    pending = open(`${env.natsUser()}-${scope}`);
+    scoped.set(scope, pending);
+  }
+  return pending;
+}
+
+function open(name: string): Promise<NatsConnection> {
   const seed = env.natsNkeySeed();
   const creds = env.natsCreds();
   // exactOptionalPropertyTypes: an absent credential is an absent key, never `undefined`.
@@ -51,15 +78,14 @@ export function connection(): Promise<NatsConnection> {
       : seed !== null
         ? { authenticator: nkeyAuthenticator(new TextEncoder().encode(seed)) }
         : {};
-  globalThis.__foodosNats ??= connect({
+  return connect({
     servers: natsUrl(),
-    name: user,
-    inboxPrefix: `_INBOX.${user}`,
+    name,
+    inboxPrefix: `_INBOX.${name}`,
     maxReconnectAttempts: -1,
     reconnectTimeWait: 500,
     ...auth,
   });
-  return globalThis.__foodosNats;
 }
 
 export async function js(): Promise<JetStreamClient> {
@@ -71,10 +97,10 @@ export async function jsm(): Promise<JetStreamManager> {
 }
 
 export async function closeConnection(): Promise<void> {
-  const pending = globalThis.__foodosNats;
-  if (pending === undefined) return;
+  const all = [globalThis.__foodosNats, ...(globalThis.__foodosNatsScoped?.values() ?? [])];
   globalThis.__foodosNats = undefined;
-  await (await pending).drain();
+  globalThis.__foodosNatsScoped = undefined;
+  await Promise.all(all.map(async (pending) => (await pending)?.drain()));
 }
 
 export const encode = (value: unknown): Uint8Array =>

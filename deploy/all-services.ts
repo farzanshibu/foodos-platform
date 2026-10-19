@@ -3,11 +3,13 @@
  *
  * For a free-tier host that gives one small web service rather than eleven. Each service
  * entry boots itself on import (subscribes, registers consumers), and they already carry
- * distinct queue groups and durable names, so sharing one NATS connection is safe.
+ * distinct queue groups and durable names. Each gets its own NATS connection (see connectionScope).
  *
  *   tsx --conditions=react-server deploy/all-services.ts
  */
 import { createServer } from "node:http";
+
+import { connectionScope } from "../packages/transport/src/connection";
 
 const SERVICES = [
   "audit",
@@ -26,7 +28,8 @@ const SERVICES = [
 const booted: string[] = [];
 
 for (const name of SERVICES) {
-  await import(`../services/${name}/src/index.ts`);
+  // One NATS connection per service: the hosted bus caps subscriptions per connection.
+  await connectionScope.run(name, () => import(`../services/${name}/src/index.ts`));
   booted.push(name);
   console.info(`[all] started ${name}`);
 }
