@@ -35,6 +35,7 @@ import Link from "next/link";
 import { NavLink } from "@/components/nav-link";
 import { billingHref, route } from "@/components/nav-links";
 import { NavSection } from "@/components/nav-section";
+import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/features/table/theme";
 
 export type SidebarNudge = { readonly title: string; readonly detail: string | null };
@@ -104,6 +105,7 @@ export function Sidebar({
           {/* Dim is what a pass tablet wants after dark; the choice is per device. */}
           <ThemeToggle />
         </div>
+        <SignOutButton />
       </div>
     </nav>
   );

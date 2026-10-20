@@ -17,6 +17,7 @@ import { Badge } from "@foodos/ui/badge";
 import { usePathname } from "next/navigation";
 
 import { isCurrent } from "@/components/nav-links";
+import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/features/table/theme";
 
 /** Longest prefix wins, so /manage/orders/42 is still "Orders". */
@@ -46,6 +47,10 @@ export function Topbar({ role }: { readonly role: OrgRole }) {
         </Badge>
         {/* The sidebar carries this on a laptop; a phone has no sidebar. */}
         <ThemeToggle className="md:hidden" />
+        {/* The sidebar carries this on a laptop; a phone has no sidebar. */}
+        <span className="md:hidden">
+          <SignOutButton compact />
+        </span>
       </div>
     </header>
   );
