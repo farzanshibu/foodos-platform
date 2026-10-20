@@ -70,15 +70,20 @@ export function NavSection({
         onClick={toggle}
         aria-expanded={open}
         aria-controls={listId}
-        className="flex w-full items-center justify-between rounded-md px-2 py-1 font-medium text-[10.5px] text-muted-foreground uppercase tracking-[0.08em] transition-colors duration-150 hover:text-foreground"
+        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 font-semibold text-[11px] text-primary uppercase tracking-[0.1em] transition-colors duration-150 hover:bg-primary/5"
       >
         <span>{group}</span>
         <ChevronRight
-          className={cn("size-3.5 transition-transform duration-150", open && "rotate-90")}
+          className={cn("size-3.5 text-primary/70 transition-transform duration-150", open && "rotate-90")}
           aria-hidden="true"
         />
       </button>
-      <ul id={listId} hidden={!open} className="space-y-px pb-1.5">
+      <ul
+        id={listId}
+        hidden={!open}
+        // A guide line the points sit on, indented under its heading: main > sub.
+        className="mt-0.5 mb-1.5 ml-3.5 space-y-px border-border border-l pl-3"
+      >
         {items.map((item) => (
           <li key={item.href}>
             <NavLink item={item} />

@@ -32,7 +32,7 @@ export function NavLink({ item }: { item: NavEntryAccess }) {
       )}
       aria-current={current ? "page" : undefined}
       className={cn(
-        "relative flex items-center justify-between gap-2 rounded-md px-2 py-1 text-[13px] leading-5",
+        "group/nav relative flex items-center justify-between gap-2 rounded-md px-2.5 py-1 text-[13px] leading-5",
         "transition-colors duration-[var(--duration-hover)] ease-[var(--ease-out)]",
         current
           ? "bg-primary/10 font-medium text-primary"
@@ -40,10 +40,17 @@ export function NavLink({ item }: { item: NavEntryAccess }) {
         item.locked && !current && "text-muted-foreground/70",
       )}
     >
-      {/* Not colour alone: the current item also carries a rail and aria-current. */}
-      {current ? (
-        <span className="-left-2 absolute h-3.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
-      ) : null}
+      {/* The point marking a sub-item. Not colour alone: the current one is also larger,
+          filled and carries aria-current, so it survives greyscale. */}
+      <span
+        className={cn(
+          "absolute top-1/2 left-[-12.5px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-150",
+          current
+            ? "size-2 bg-primary ring-4 ring-background"
+            : "size-1.5 bg-border-strong group-hover/nav:bg-primary/60",
+        )}
+        aria-hidden="true"
+      />
       <span className="truncate">{item.label}</span>
       {item.locked ? (
         <>
