@@ -77,6 +77,13 @@ function useTableCartState(args: { seated: boolean; pollSeconds: number }): Tabl
   );
   const cart = cartQuery.data?.items[0] ?? null;
   const isShared = cart?.isShared === true;
+  /**
+   * Seeing a table's basket is not belonging to it. A second phone, or a re-scan that minted a
+   * new session, is shown the same basket but is not a member until it joins - and the service
+   * answers every change from a non-member with "Cart not found". Joining is idempotent and
+   * hands back the same basket, so the fix is to join, not to hide the basket.
+   */
+  const isMember = cart?.members.some((member) => member.isYou) ?? false;
 
   const refetch = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: trpc.cart.get.queryKey() });
@@ -106,13 +113,13 @@ function useTableCartState(args: { seated: boolean; pollSeconds: number }): Tabl
   useEffect(() => {
     if (!args.seated || !hasHydrated || joined.current) return;
     if (cartQuery.isLoading) return;
-    if (cart !== null) return;
+    if (cart !== null && (!cart.isShared || isMember)) return;
     joined.current = true;
     join.mutate(
       { branchId: "", orderType: "dine_in", lines: localLines },
       { onSuccess: () => localClear() },
     );
-  }, [args.seated, hasHydrated, cartQuery.isLoading, cart, localLines, localClear, join]);
+  }, [args.seated, hasHydrated, cartQuery.isLoading, cart, isMember, localLines, localClear, join]);
 
   const add = useCallback(
     (line: CartLine) => {
@@ -120,9 +127,14 @@ function useTableCartState(args: { seated: boolean; pollSeconds: number }): Tabl
         localAdd(line);
         return;
       }
+      if (!isMember) {
+        // Not in the party yet: join WITH this dish rather than failing it.
+        join.mutate({ branchId: "", orderType: "dine_in", lines: [line] });
+        return;
+      }
       update.mutate({ action: "add_line", id: cart.id, lineId: newLineId(), line });
     },
-    [isShared, cart, localAdd, update],
+    [isShared, isMember, cart, localAdd, join, update],
   );
 
   const setQuantity = useCallback(

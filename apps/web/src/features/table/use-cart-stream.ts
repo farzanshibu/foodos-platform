@@ -13,6 +13,7 @@
  */
 "use client";
 
+import { env } from "@foodos/env";
 import { useEffect, useRef, useState } from "react";
 
 /** Two failures is a pattern, not a blip: the first is routine, the second means it will not hold. */
@@ -50,6 +51,21 @@ export function useCartStream(args: {
     let failures = 0;
     let disposed = false;
     let poller: ReturnType<typeof setInterval> | null = null;
+
+    // No stream configured: ask on a timer from the start, and never open a connection.
+    if (!env.cartStream()) {
+      setState("polling");
+      poller = setInterval(() => onChangeRef.current(), Math.max(2, pollSeconds) * 1000);
+      const onVisibleOnly = () => {
+        if (document.visibilityState === "visible") onChangeRef.current();
+      };
+      document.addEventListener("visibilitychange", onVisibleOnly);
+      return () => {
+        disposed = true;
+        if (poller !== null) clearInterval(poller);
+        document.removeEventListener("visibilitychange", onVisibleOnly);
+      };
+    }
 
     const source = new EventSource(`/api/stream/cart?cartId=${encodeURIComponent(cartId)}`);
 
