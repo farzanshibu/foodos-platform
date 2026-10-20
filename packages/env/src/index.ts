@@ -128,6 +128,16 @@ function publicAppUrl(): string {
   return requireValue("NEXT_PUBLIC_APP_URL", process.env["NEXT_PUBLIC_APP_URL"]);
 }
 
+/**
+ * Whether the browser should open the live cart stream. Off unless asked for: the stream is a
+ * long-lived server function holding a bus connection per open phone, which a small hosted
+ * deployment cannot afford, and the cart already falls back to re-reading every few seconds.
+ * Literal key, like `publicAppUrl`, because the browser reads it.
+ */
+function publicCartStream(): boolean {
+  return process.env["NEXT_PUBLIC_CART_STREAM"] === "on";
+}
+
 export const env = {
   /** Same value in the gateway and every service, or services reject every envelope. */
   envelopeSecret: (): string => requireSecret("ENVELOPE_SECRET"),
@@ -160,6 +170,8 @@ export const env = {
   natsCreds: (): string | null => optional("NATS_CREDS"),
   /** Browser-safe. Anything shipped to the client must call this one. */
   publicAppUrl,
+  /** Browser-safe. */
+  cartStream: publicCartStream,
   /** The server-side name for the same read, so the two can never drift apart. */
   appUrl: publicAppUrl,
   betterAuthSecret: (): string => requireSecret("BETTER_AUTH_SECRET"),
