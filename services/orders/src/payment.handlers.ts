@@ -215,12 +215,25 @@ async function recordCash(args: { organizationId: string; orderId: string; amoun
   if (created === null) throw new ServiceError("INTERNAL", "The payment was not recorded.");
 
   const from = asOrderStatusOrThrow(order.status);
-  if (from !== "paid") {
+  /**
+   * Paying BEFORE the kitchen touches the order moves it to `paid`, which is what lets staff
+   * accept it. Paying AFTER (the pay-at-the-end flow: accepted, cooked, served, then the bill)
+   * only settles the money: the order keeps the status the floor has already taken it to, so
+   * recording a payment never drags a served order backwards.
+   */
+  const settlesEarly = from === "created" || from === "payment_pending" || from === "payment_failed";
+  if (settlesEarly) {
     assertTransition(ORDER_TRANSITIONS, from, "paid", "order");
     await orderService.update({
       organizationId: args.organizationId,
       id: order.id,
       patch: { status: "paid", paymentStatus: "paid" },
+    });
+  } else if (from !== "paid") {
+    await orderService.update({
+      organizationId: args.organizationId,
+      id: order.id,
+      patch: { paymentStatus: "paid" },
     });
   }
 

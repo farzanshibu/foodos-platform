@@ -25,7 +25,6 @@ type Order = OutputOf<"order", "read">["items"][number];
 /** The happy path, in order. Anything not on it is shown on its own as an exception. */
 const STEPS = [
   { status: "payment_pending", label: "Placed" },
-  { status: "paid", label: "Paid" },
   { status: "accepted", label: "Accepted" },
   { status: "preparing", label: "Being cooked" },
   { status: "ready", label: "Ready" },
@@ -34,7 +33,14 @@ const STEPS = [
 ] as const;
 
 function stepIndex(status: string): number {
-  return STEPS.findIndex((step) => step.status === status);
+  // A prepaid order is "paid" until the kitchen accepts it; for the diner that is still "Placed".
+  return STEPS.findIndex((step) => step.status === (status === "paid" ? "payment_pending" : status));
+}
+
+/** What the diner reads in the badge: never the internal payment state while food is on its way. */
+function statusLabel(status: string): string {
+  if (status === "payment_pending" || status === "paid") return "order placed";
+  return status.replace(/_/g, " ");
 }
 
 export function OrderTracker() {
@@ -97,9 +103,15 @@ function OrderCard({ order }: { order: Order }) {
         <div className="flex items-center justify-between">
           <p className="font-medium text-foreground">Order #{order.orderNumber}</p>
           <Badge variant={cancelled ? "destructive" : "secondary"}>
-            {order.status.replace(/_/g, " ")}
+            {statusLabel(order.status)}
           </Badge>
         </div>
+
+        {cancelled || order.paymentStatus === "paid" ? null : (
+          <p className="text-muted-foreground text-xs">
+            No need to pay now - the bill is settled at your table when you are done.
+          </p>
+        )}
 
         {cancelled ? (
           <p className="text-muted-foreground text-sm">

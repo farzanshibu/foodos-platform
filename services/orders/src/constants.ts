@@ -40,7 +40,15 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
  */
 export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
   created: ["payment_pending", "paid", "cancelled_by_customer", "cancelled_by_restaurant"],
-  payment_pending: ["paid", "payment_failed", "cancelled_by_customer", "cancelled_by_restaurant"],
+  // Pay-at-the-end: a dine-in order can be accepted before it is paid, and the bill is settled
+  // later without touching the fulfilment status (see recordCash).
+  payment_pending: [
+    "paid",
+    "accepted",
+    "payment_failed",
+    "cancelled_by_customer",
+    "cancelled_by_restaurant",
+  ],
   payment_failed: ["payment_pending", "cancelled_by_customer", "cancelled_by_restaurant"],
   paid: ["accepted", "cancelled_by_restaurant", "refunded"],
   accepted: ["preparing", "cancelled_by_restaurant"],
@@ -55,6 +63,7 @@ export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatu
 
 /** The statuses a restaurant is actively working on. Drives the console's default view. */
 export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
+  "payment_pending",
   "paid",
   "accepted",
   "preparing",
