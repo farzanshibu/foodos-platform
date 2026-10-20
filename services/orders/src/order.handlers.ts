@@ -313,7 +313,7 @@ export const orderHandlers = [
     });
 
     const orderId = crypto.randomUUID();
-    const created = await orderService.create({
+    const created = await orderService.createNumbered({
       id: orderId,
       organizationId: ctx.orgId,
       restaurantId: await restaurantOf(ctx, input.branchId),
@@ -325,10 +325,6 @@ export const orderHandlers = [
       guestName: input.guestName ?? null,
       guestPhone: input.guestPhone ?? null,
       guestEmail: input.guestEmail ?? null,
-      orderNumber: await orderService.nextOrderNumber({
-        organizationId: ctx.orgId,
-        branchId: input.branchId,
-      }),
       orderType: input.orderType,
       source: ctx.role === "guest" ? "qr" : "manual",
       status: "payment_pending",
