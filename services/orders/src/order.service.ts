@@ -150,6 +150,12 @@ export const cartService = {
   },
 };
 
+/** Postgres 23505, whether the driver threw it directly or wrapped it as the cause. */
+function isUniqueViolation(error: unknown): boolean {
+  const code = (error as { code?: string; cause?: { code?: string } } | null) ?? null;
+  return code?.code === "23505" || code?.cause?.code === "23505";
+}
+
 export const orderService = {
   async list(
     args: Scope & {
@@ -201,20 +207,50 @@ export const orderService = {
    * sequence per branch keeps the number restarting each morning, which is what staff expect
    * when they call an order across a pass.
    */
+  /**
+   * The next number for a branch: one more than the highest ever issued.
+   *
+   * It used to be the count of today's orders plus one, which restarted every midnight - but
+   * the unique index is per branch for ever, so the first order of a new day collided with the
+   * first order of the day before. Counting also hands out a number twice the moment an order
+   * is removed. The highest number plus one cannot do either, and the number is still short
+   * enough to call across a kitchen for the first thousand orders of a branch.
+   */
   async nextOrderNumber(args: Scope & { branchId: string }) {
-    const midnight = new Date();
-    midnight.setHours(0, 0, 0, 0);
     const [row] = await db
-      .select({ value: count() })
+      .select({ value: sql<number>`coalesce(max(cast(${order.orderNumber} as integer)), 0)` })
       .from(order)
       .where(
         and(
           eq(order.organizationId, args.organizationId),
           eq(order.branchId, args.branchId),
-          gte(order.createdAt, midnight),
+          sql`${order.orderNumber} ~ '^[0-9]+$'`,
         ),
       );
-    return String((row?.value ?? 0) + 1).padStart(4, "0");
+    return String(Number(row?.value ?? 0) + 1).padStart(4, "0");
+  },
+
+  /**
+   * Insert with a number, retrying when two orders at the same branch picked the same one at
+   * the same moment. The unique index is what guarantees correctness; this makes losing the
+   * race invisible to the diner instead of a failed order.
+   */
+  async createNumbered(values: Omit<typeof order.$inferInsert, "orderNumber">) {
+    for (let attempt = 1; ; attempt += 1) {
+      const orderNumber = await orderService.nextOrderNumber({
+        organizationId: values.organizationId,
+        branchId: values.branchId,
+      });
+      try {
+        const [row] = await db
+          .insert(order)
+          .values({ ...values, orderNumber })
+          .returning();
+        return row ?? null;
+      } catch (error) {
+        if (attempt >= 6 || !isUniqueViolation(error)) throw error;
+      }
+    }
   },
 
   async create(values: typeof order.$inferInsert) {
